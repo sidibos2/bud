@@ -1,0 +1,27 @@
+{
+
+  "description": "This is for Bud",
+  "authors": [
+    {
+      "name": "Moussa Sidibe",
+      "email": "sidibemousse@hotmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Bud\\": "src/"
+    }
+  },
+  "require-dev": {
+    "php": ">=5.6.0",
+    "phpunit/phpunit": "5.7.*"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "BudTest\\": "tests/"
+    }
+  }
+}
