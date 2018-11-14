@@ -3,18 +3,22 @@
 namespace Bud;
 
 use Bud\Http\CurlRequest;
+use Bud\Http\Request;
 
 class ApiClient
 {
+    // Considering any code is a failure
+    const SUCCESS = 200;
     const BASE_URL = 'https://death.star.api';
-
     const OAUTH2_CLIENT_ID = 'R2D2';
     const OAUTH2_CLIENT_SECRET = 'Alderan';
-
     const TOKEN_ENDPOINT = '/token';
     const REACTOR_ENDPOINT = '/reactor/exhaust/';
     const PRISONER_lEA_ENDPOINT = '/prisoner/';
 
+    /**
+     * @return mixed
+     */
     public function getToken()
     {
         $postFields = [
@@ -23,20 +27,27 @@ class ApiClient
             'grant_type' => 'client_credentials',
         ];
 
-        $curlRequest = new CurlRequest(self::BASE_URL . self::TOKEN_ENDPOINT);
-        $curlRequest->setOption(CURLOPT_POSTFIELDS, http_build_query($postFields));
-        $curlRequest->setOption(CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
-        $curlRequest->setOption(CURLOPT_RETURNTRANSFER, true);
+        $request = $this->getRequest(self::BASE_URL . self::TOKEN_ENDPOINT);
+        $request->setOption(CURLOPT_POSTFIELDS, http_build_query($postFields));
+        $request->setOption(CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        $request->setOption(CURLOPT_RETURNTRANSFER, true);
 
-        $response = json_decode($curlRequest->execute());
-
-        $curlRequest->close();
+        $response = $this->processResponse($request->execute());
 
         return $response->access_token;
     }
 
+    /**
+     * @param int $num
+     *
+     * @throws \Exception
+     */
     public function getReactorExhaust($num)
     {
+        if (empty($num)) {
+            throw new \Exception('Exhaust number cannot be empty');
+        }
+
         $token = $this->getToken();
         $httpHeaders = [
             'Authorization: Bearer ' . $token,
@@ -44,27 +55,64 @@ class ApiClient
             'x-torpedoes: 2',
         ];
 
-        $request = new CurlRequest(self::BASE_URL . self::REACTOR_ENDPOINT . $num);
+        $request = $this->getRequest(self::BASE_URL . self::REACTOR_ENDPOINT . $num);
         $request->setOption(CURLOPT_HTTPHEADER, $httpHeaders);
         $request->setOption(CURLOPT_CUSTOMREQUEST, 'DELETE');
-        $response = json_decode($request->execute());
 
-        return $response;
+        $this->processResponse($request->execute());
     }
 
+    /**
+     * @param string $name
+     *
+     * @return mixed
+     */
     public function getPrisoner($name)
     {
+        if (empty($name)) {
+            throw new Exception('Prisoner name cannot be empty');
+        }
+
         $token = $this->getToken();
         $httpHeaders = [
             'Authorization: Bearer ' . $token,
             'Content-Type: application/json',
         ];
 
-        $request = new CurlRequest(self::BASE_URL . self::PRISONER_lEA_ENDPOINT . $name);
+        $request = $this->getRequest(self::BASE_URL . self::PRISONER_lEA_ENDPOINT . $name);
         $request->setOption(CURLOPT_HTTPHEADER, $httpHeaders);
 
-        $response = json_decode($request->execute());
+        return $this->processResponse($request->execute());
+    }
 
-        return $response;
+    /**
+     * @param string $endpoint
+     *
+     * @return CurlRequest
+     *
+     * @throws \Exception
+     */
+    public function getRequest($endpoint)
+    {
+        if (empty($url)) {
+            throw new \Exception('Endpoint cannot be empty');
+        }
+        return new CurlRequest($endpoint);
+    }
+
+    /**
+     * @param array $result
+     *
+     * @return mixed
+     *
+     * @throws \Exception
+     */
+    private function processResponse(array $result)
+    {
+        $httpCode = (int) $result['http_code'];
+        if ($httpCode !== self::SUCCESS) {
+            throw new \Exception('Error -  Request error', $httpCode);
+        }
+        return json_decode($result['response']);
     }
 }

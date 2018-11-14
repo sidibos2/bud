@@ -1,7 +1,7 @@
 <?php
 namespace Bud\Http;
 
-interface Request
+interface RequestInterface
 {
     public function setOption($name, $value);
     public function execute();
